@@ -4,6 +4,9 @@ import matplotlib.animation as animation
 import pandas as pd
 import random
 
+# 用于顺序选择波动线的计数器
+wave_line_counter = 0
+
 # --- 读取潮汐数据 ---
 data = pd.read_csv(r'd:/MScIME25/SD5913-PFAD/pfad/week02/tides_processed.csv')
 tide_levels = data['tide_level'].values
@@ -39,8 +42,8 @@ for y in ys:
     (line,) = ax.plot(x, np.full(N_POINTS, y), lw=1, color='white')
     lines.append(line)
 
-# --- 左上角文本 ---
-txt = ax.text(10, 20, '', color='white', fontsize=14, ha='left', va='top', backgroundcolor='black')
+# --- 左下角潮汐+时间文本 ---
+txt_bottom = ax.text(10, 10, '', color='white', fontsize=10, ha='left', va='bottom', backgroundcolor='black', bbox=dict(facecolor='black', alpha=0.6, boxstyle='round,pad=0.2'))
 
 
 # --- 动画更新函数 ---
@@ -51,12 +54,14 @@ def animate(i):
     idx = (i // data_speed) % len(tide_levels)
     tide = tide_levels[idx]
     dt = datetimes[idx]
-    txt.set_text(f'Tide: {tide:.2f}m\n{dt}')
+    txt_bottom.set_text(f'Tide: {tide:.2f}m\n{dt}')
     wave_speed = BASE_WAVE_SPEED
 
     # 每个数据点只产生一次波动
+    global wave_line_counter
     if i % data_speed == 0:
-        line_idx = random.randint(0, N_LINES-1)
+        line_idx = N_LINES - 1 - wave_line_counter
+        wave_line_counter = (wave_line_counter + 1) % N_LINES
         pos = random.randint(N_POINTS//4, 3*N_POINTS//4)
         amp = 10 + 25 * (tide / tide_levels.max())
         width = 12
@@ -78,7 +83,7 @@ def animate(i):
         # 更新线条
         lines[j].set_ydata(ys[j] + positions[j])
 
-    return lines + [txt]
+    return lines + [txt_bottom]
 
 ani = animation.FuncAnimation(fig, animate, frames=len(tide_levels), interval=120, blit=True)
 plt.show()
